@@ -6,66 +6,80 @@ class StopWatch extends StatefulWidget {
   const StopWatch({super.key});
 
   @override
-  State<StopWatch> createState() => _StopWatchState();
+  State<StopWatch> createState() => StopWatchState();
 }
 
-class _StopWatchState extends State<StopWatch> {
+class StopWatchState extends State<StopWatch> {
   bool timerRunning = false;
   int counter = 0;
-  Stream<int>? timerStream;
+  Timer? timer;
+  StreamController<int>? controller;
   StreamSubscription<int>? timerSubscription;
   String hoursStr = '00';
   String minutesStr = '00';
   String secondsStr = '00';
 
-  Stream<int> timedCounter(Duration interval) {
-    StreamController<int> controller = StreamController<int>();
-    Timer? timer;
-
-    void tick(_) {
+   void tick(_) {
       counter++;
-      controller.add(counter); // Ask stream to send counter values as event.
-      // if (counter == maxCount) {
-      //   timer?.cancel();
-      //   controller.close(); // Ask stream to shut down and tell listeners.
-      // }
+      controller!.add(counter);
     }
 
-    void startTimer() {
+  void startTimer() {
+    if (controller == null) {
+      controller = StreamController<int>();
+      timer = Timer.periodic(const Duration(seconds: 1), tick);
+    }
+    setState(() {
+      timerRunning = true;
+    });
+    timerSubscription = controller!.stream.listen((int newTick) {
       setState(() {
-        timerRunning = true;
+        hoursStr = ((newTick / 3600) % 60).floor().toString().padLeft(2, '0');
+        minutesStr = ((newTick / 60) % 60).floor().toString().padLeft(2, '0');
+        secondsStr = (newTick % 60).floor().toString().padLeft(2, '0');
       });
-      timer = Timer.periodic(interval, tick);
+    });
+  }
+
+  void pauseTimer() {
+    setState(() {
+      timerRunning = false;
+    });
+    timerSubscription?.pause();
+    timer?.cancel();
+    timer = null;
+  }
+
+  void resumeTimer() {
+    if (controller != null && timer == null) {
+      timer = Timer.periodic(const Duration(seconds: 1), tick);
     }
+    setState(() {
+      timerRunning = true;
+    });
+    timerSubscription?.resume();
+  }
 
-    void stopTimer() {
-      if (timer != null) {
-        timer?.cancel();
-        timer = null;
-        controller.close();
-        super.dispose();
-      }
-    }
-
-    void pauseTimer() {
-      if (timer != null) {
-        timer?.cancel();
-        timer = null;
-      }
-    }
-
-    controller = StreamController<int>(
-        onListen: startTimer,
-        onPause: pauseTimer,
-        onResume: startTimer,
-        onCancel: stopTimer);
-
-    return controller.stream;
+  void resetTimer() {
+    timerSubscription?.cancel();
+    controller?.close();
+    timer?.cancel();
+    controller = null;
+    timer = null;
+    setState(() {
+      timerRunning = false;
+      counter = 0;
+      hoursStr = '00';
+      minutesStr = '00';
+      secondsStr = '00';
+    });
   }
 
   @override
   void dispose() {
     timerSubscription?.cancel();
+    controller?.close();
+    timer?.cancel();
     super.dispose();
   }
 
@@ -88,74 +102,38 @@ class _StopWatchState extends State<StopWatch> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 20.0, vertical: 8.0),
-                      backgroundColor:
-                          timerRunning ? Colors.blue : Colors.green,
-                      foregroundColor: Colors.white,
-                    ),
-                    onPressed: () {
-                      timerStream = timedCounter(const Duration(seconds: 1));
-                      if (timerRunning) {
-                        setState(() {
-                          timerRunning = false;
-                        });
-                        timerSubscription?.pause();
-                      } else {
-                        timerSubscription = timerStream?.listen((int newTick) {
-                          var hours = (newTick / (60 * 60)) % 60;
-                          setState(() {
-                            hoursStr = ((newTick / (60 * 60)) % 60)
-                                .floor()
-                                .toString()
-                                .padLeft(2, '0');
-                            minutesStr = (((newTick - hours * 3600) / 60) % 60)
-                                .floor()
-                                .toString()
-                                .padLeft(2, '0');
-                            secondsStr = (newTick % 60)
-                                .floor()
-                                .toString()
-                                .padLeft(2, '0');
-                          });
-                          debugPrint(
-                            'timerRunning === $timerRunning',
-                          );
-                        });
-                      }
-                    },
-                    child: Text(
-                      timerRunning ? 'PAUSE' : 'START',
-                      style: const TextStyle(
-                        fontSize: 20.0,
-                      ),
-                    )),
-                const SizedBox(width: 40.0),
-                ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 20.0, vertical: 8.0),
-                    backgroundColor: Colors.red,
+                    padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 8.0),
+                    backgroundColor: timerRunning ? Colors.blue : Colors.green,
                     foregroundColor: Colors.white,
                   ),
                   onPressed: () {
-                    timerSubscription?.cancel();
-                    timerStream = null;
-                    setState(() {
-                      timerRunning = false;
-                      counter = 0;
-                      hoursStr = '00';
-                      minutesStr = '00';
-                      secondsStr = '00';
-                    });
+                    if (timerRunning) {
+                      pauseTimer();
+                    } else {
+                      if (controller == null) {
+                        startTimer();
+                      } else {
+                        resumeTimer();
+                      }
+                    }
                   },
+                  child: Text(
+                    timerRunning ? 'PAUSE' : 'START',
+                    style: const TextStyle(fontSize: 20.0),
+                  ),
+                ),
+                const SizedBox(width: 40.0),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 8.0),
+                    backgroundColor: Colors.red,
+                    foregroundColor: Colors.white,
+                  ),
+                  onPressed: resetTimer,
                   child: const Text(
                     'RESET',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 20.0,
-                    ),
+                    style: TextStyle(color: Colors.white, fontSize: 20.0),
                   ),
                 ),
               ],
