@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 class StopWatch extends StatefulWidget {
   const StopWatch({super.key});
 
-   @override
+  @override
   State<StopWatch> createState() => _StopWatchState();
 }
 
@@ -39,24 +39,18 @@ class _StopWatchState extends State<StopWatch> {
     }
 
     void stopTimer() {
-       if (timer != null) {
-        setState(() {
-        timerRunning = false;
-      });
-       timer?.cancel();
+      if (timer != null) {
+        timer?.cancel();
         timer = null;
-        counter = 0;
         controller.close();
+        super.dispose();
       }
     }
 
     void pauseTimer() {
-       if (timer != null) {
-        setState(() {
-        timerRunning = false;
-      });
-       timer?.cancel();
-       timer = null;
+      if (timer != null) {
+        timer?.cancel();
+        timer = null;
       }
     }
 
@@ -104,15 +98,19 @@ class _StopWatchState extends State<StopWatch> {
                     onPressed: () {
                       timerStream = timedCounter(const Duration(seconds: 1));
                       if (timerRunning) {
+                        setState(() {
+                          timerRunning = false;
+                        });
                         timerSubscription?.pause();
                       } else {
                         timerSubscription = timerStream?.listen((int newTick) {
+                          var hours = (newTick / (60 * 60)) % 60;
                           setState(() {
                             hoursStr = ((newTick / (60 * 60)) % 60)
                                 .floor()
                                 .toString()
                                 .padLeft(2, '0');
-                            minutesStr = ((newTick / 60) % 60)
+                            minutesStr = (((newTick - hours * 3600) / 60) % 60)
                                 .floor()
                                 .toString()
                                 .padLeft(2, '0');
@@ -145,6 +143,8 @@ class _StopWatchState extends State<StopWatch> {
                     timerSubscription?.cancel();
                     timerStream = null;
                     setState(() {
+                      timerRunning = false;
+                      counter = 0;
                       hoursStr = '00';
                       minutesStr = '00';
                       secondsStr = '00';
