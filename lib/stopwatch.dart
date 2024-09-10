@@ -2,14 +2,14 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
-class FlutterStopWatch extends StatefulWidget {
-  const FlutterStopWatch({super.key});
+class StopWatch extends StatefulWidget {
+  const StopWatch({super.key});
 
    @override
-  State<FlutterStopWatch> createState() => _FlutterStopWatchState();
+  State<StopWatch> createState() => _StopWatchState();
 }
 
-class _FlutterStopWatchState extends State<FlutterStopWatch> {
+class _StopWatchState extends State<StopWatch> {
   bool timerRunning = false;
   int counter = 0;
   Stream<int>? timerStream;
