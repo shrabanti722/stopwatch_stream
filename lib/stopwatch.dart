@@ -78,7 +78,7 @@ class _StopWatchState extends State<StopWatch> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Flutter StopWatch")),
+      appBar: AppBar(title: const Text("StopWatch")),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
