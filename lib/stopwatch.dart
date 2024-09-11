@@ -2,6 +2,20 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+class StopwachStreamController {
+  StreamController<int> controller = StreamController<int>.broadcast();
+
+  Stream<int> get stream => controller.stream;
+  
+  void addTick(int tick) {
+    controller.add(tick);
+  }
+
+  void dispose() {
+    controller.close();
+  }
+}
+
 class StopWatch extends StatefulWidget {
   const StopWatch({super.key});
 
@@ -13,31 +27,34 @@ class StopWatchState extends State<StopWatch> {
   bool timerRunning = false;
   int counter = 0;
   Timer? timer;
-  StreamController<int>? controller;
-  StreamSubscription<int>? timerSubscription;
-  String hoursStr = '00';
-  String minutesStr = '00';
-  String secondsStr = '00';
+  final StopwachStreamController controller = StopwachStreamController();
 
    void tick(_) {
       counter++;
-      controller!.add(counter);
+      controller.addTick(counter);
     }
 
+  // void startTimer() {
+  //   if (controller == null) {
+  //     controller = StreamController<int>();
+  //     timer = Timer.periodic(const Duration(seconds: 1), tick);
+  //   }
+  //   setState(() {
+  //     timerRunning = true;
+  //   });
+  //   timerSubscription = controller!.stream.listen((int newTick) {
+  //     setState(() {
+  //       hoursStr = ((newTick / 3600) % 60).floor().toString().padLeft(2, '0');
+  //       minutesStr = ((newTick / 60) % 60).floor().toString().padLeft(2, '0');
+  //       secondsStr = (newTick % 60).floor().toString().padLeft(2, '0');
+  //     });
+  //   });
+  // }
+
   void startTimer() {
-    if (controller == null) {
-      controller = StreamController<int>();
-      timer = Timer.periodic(const Duration(seconds: 1), tick);
-    }
+    timer ??= Timer.periodic(const Duration(seconds: 1), tick);
     setState(() {
       timerRunning = true;
-    });
-    timerSubscription = controller!.stream.listen((int newTick) {
-      setState(() {
-        hoursStr = ((newTick / 3600) % 60).floor().toString().padLeft(2, '0');
-        minutesStr = ((newTick / 60) % 60).floor().toString().padLeft(2, '0');
-        secondsStr = (newTick % 60).floor().toString().padLeft(2, '0');
-      });
     });
   }
 
@@ -45,41 +62,58 @@ class StopWatchState extends State<StopWatch> {
     setState(() {
       timerRunning = false;
     });
-    timerSubscription?.pause();
+    // timerSubscription?.pause();
     timer?.cancel();
     timer = null;
   }
 
-  void resumeTimer() {
-    if (controller != null && timer == null) {
-      timer = Timer.periodic(const Duration(seconds: 1), tick);
-    }
+  // void resumeTimer() {
+  //   if (controller != null && timer == null) {
+  //     timer = Timer.periodic(const Duration(seconds: 1), tick);
+  //   }
+  //   setState(() {
+  //     timerRunning = true;
+  //   });
+  //   timerSubscription?.resume();
+  // }
+
+   void resumeTimer() {
+    timer ??= Timer.periodic(const Duration(seconds: 1), tick);
     setState(() {
       timerRunning = true;
     });
-    timerSubscription?.resume();
   }
 
+  // void resetTimer() {
+  //   timerSubscription?.cancel();
+  //   controller?.close();
+  //   timer?.cancel();
+  //   controller = null;
+  //   timer = null;
+  //   setState(() {
+  //     timerRunning = false;
+  //     counter = 0;
+  //     hoursStr = '00';
+  //     minutesStr = '00';
+  //     secondsStr = '00';
+  //   });
+  // }
+
   void resetTimer() {
-    timerSubscription?.cancel();
-    controller?.close();
     timer?.cancel();
-    controller = null;
     timer = null;
+    controller.addTick(0);
     setState(() {
       timerRunning = false;
       counter = 0;
-      hoursStr = '00';
-      minutesStr = '00';
-      secondsStr = '00';
     });
   }
 
-  @override
+
+   @override
   void dispose() {
-    timerSubscription?.cancel();
-    controller?.close();
     timer?.cancel();
+    controller.dispose();
     super.dispose();
   }
 
@@ -91,11 +125,20 @@ class StopWatchState extends State<StopWatch> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(
-              "$hoursStr:$minutesStr:$secondsStr",
-              style: const TextStyle(
-                fontSize: 90.0,
-              ),
+            StreamBuilder<int>(
+              stream: controller.stream,
+              builder: (context, snapshot) {
+                final int tick = snapshot.data ?? 0;
+                final hoursStr = ((tick / 3600) % 60).floor().toString().padLeft(2, '0');
+                final minutesStr = ((tick / 60) % 60).floor().toString().padLeft(2, '0');
+                final secondsStr = (tick % 60).floor().toString().padLeft(2, '0');
+                return Text(
+                  "$hoursStr:$minutesStr:$secondsStr",
+                  style: const TextStyle(
+                    fontSize: 90.0,
+                  ),
+                );
+              },
             ),
             const SizedBox(height: 30.0),
             Row(
