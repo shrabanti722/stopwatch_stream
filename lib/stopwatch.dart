@@ -52,7 +52,7 @@ class StopWatchState extends State<StopWatch> {
   // }
 
   void startTimer() {
-    timer ??= Timer.periodic(const Duration(seconds: 1), tick);
+    timer = Timer.periodic(const Duration(seconds: 1), tick);
     setState(() {
       timerRunning = true;
     });
