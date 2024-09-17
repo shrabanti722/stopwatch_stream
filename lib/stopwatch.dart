@@ -34,23 +34,6 @@ class StopWatchState extends State<StopWatch> {
       controller.addTick(counter);
     }
 
-  // void startTimer() {
-  //   if (controller == null) {
-  //     controller = StreamController<int>();
-  //     timer = Timer.periodic(const Duration(seconds: 1), tick);
-  //   }
-  //   setState(() {
-  //     timerRunning = true;
-  //   });
-  //   timerSubscription = controller!.stream.listen((int newTick) {
-  //     setState(() {
-  //       hoursStr = ((newTick / 3600) % 60).floor().toString().padLeft(2, '0');
-  //       minutesStr = ((newTick / 60) % 60).floor().toString().padLeft(2, '0');
-  //       secondsStr = (newTick % 60).floor().toString().padLeft(2, '0');
-  //     });
-  //   });
-  // }
-
   void startTimer() {
     timer = Timer.periodic(const Duration(seconds: 1), tick);
     setState(() {
@@ -62,20 +45,9 @@ class StopWatchState extends State<StopWatch> {
     setState(() {
       timerRunning = false;
     });
-    // timerSubscription?.pause();
     timer?.cancel();
     timer = null;
   }
-
-  // void resumeTimer() {
-  //   if (controller != null && timer == null) {
-  //     timer = Timer.periodic(const Duration(seconds: 1), tick);
-  //   }
-  //   setState(() {
-  //     timerRunning = true;
-  //   });
-  //   timerSubscription?.resume();
-  // }
 
    void resumeTimer() {
     timer ??= Timer.periodic(const Duration(seconds: 1), tick);
@@ -83,21 +55,6 @@ class StopWatchState extends State<StopWatch> {
       timerRunning = true;
     });
   }
-
-  // void resetTimer() {
-  //   timerSubscription?.cancel();
-  //   controller?.close();
-  //   timer?.cancel();
-  //   controller = null;
-  //   timer = null;
-  //   setState(() {
-  //     timerRunning = false;
-  //     counter = 0;
-  //     hoursStr = '00';
-  //     minutesStr = '00';
-  //     secondsStr = '00';
-  //   });
-  // }
 
   void resetTimer() {
     timer?.cancel();
