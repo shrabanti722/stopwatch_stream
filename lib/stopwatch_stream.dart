@@ -2,19 +2,19 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
-class Stopwatchstream {
-  bool timerRunning = false;
+class Stopwatchstream extends StateNotifier<bool>  {
+  // bool timerRunning = false;
   int counter = 0;
   Timer? timer;
 
   final StreamController<int> _controller = StreamController<int>.broadcast();
 
-  Stopwatchstream() {
+   Stopwatchstream() : super(false) {
     _startTimer();
   }
 
   void _startTimer() {
-    timerRunning = true;
+    state = true;
     timer = Timer.periodic(const Duration(seconds: 1), tick);
   }
 
@@ -23,19 +23,19 @@ class Stopwatchstream {
   }
 
   void tick(Timer timer) {
-    if (timerRunning) {
+    if (state) {
       counter++;
       _controller.add(counter);
     }
   }
 
   void pauseTimer() {
-    timerRunning = false;
+    state = false;
   }
 
   void resumeTimer() {
-    if (!timerRunning) {
-      timerRunning = true;
+    if (!state) {
+      state = true;
     }
   }
 
@@ -45,13 +45,15 @@ class Stopwatchstream {
     pauseTimer();
   }
 
+  @override
   void dispose() {
     timer?.cancel();
     _controller.close();
+    super.dispose();
   }
 }
 
-final stopwatchProvider = Provider<Stopwatchstream>((ref) {
+final stopwatchProvider = StateNotifierProvider<Stopwatchstream, bool>((ref) {
    final stopwatch = Stopwatchstream();
 
    ref.onDispose(() {
@@ -62,7 +64,7 @@ final stopwatchProvider = Provider<Stopwatchstream>((ref) {
 });
 
 final stopwatchStreamProvider = StreamProvider((ref) async* {
-  final streamData = ref.watch(stopwatchProvider).getStream();
+  final streamData = ref.watch(stopwatchProvider.notifier).getStream();
   await for (final eachLiveData in streamData) {
     yield eachLiveData;
   }

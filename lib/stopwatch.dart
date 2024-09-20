@@ -9,6 +9,9 @@ class StopWatch extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final isRunning = ref.watch(stopwatchProvider);
+    final stopwatch = ref.watch(stopwatchProvider.notifier);
+
     return ref.watch(stopwatchStreamProvider).when(
           data: (data) {
             final int tick = data;
@@ -18,7 +21,6 @@ class StopWatch extends ConsumerWidget {
                 ((tick / 60) % 60).floor().toString().padLeft(2, '0');
             final secondsStr = (tick % 60).floor().toString().padLeft(2, '0');
 
-            final stopwatch = ref.read(stopwatchProvider);
             return Scaffold(
               appBar: AppBar(title: const Text("StopWatch")),
               body: Center(
@@ -39,20 +41,20 @@ class StopWatch extends ConsumerWidget {
                           style: ElevatedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 20.0, vertical: 8.0),
-                            backgroundColor: stopwatch.timerRunning
+                            backgroundColor: isRunning
                                 ? Colors.blue
                                 : Colors.green,
                             foregroundColor: Colors.white,
                           ),
                           onPressed: () {
-                            if (stopwatch.timerRunning) {
+                            if (isRunning) {
                               stopwatch.pauseTimer();
                             } else {
                               stopwatch.resumeTimer();
                             }
                           },
                           child: Text(
-                            stopwatch.timerRunning ? 'PAUSE' : 'START',
+                            isRunning ? 'PAUSE' : 'START',
                             style: const TextStyle(fontSize: 20.0),
                           ),
                         ),
@@ -81,7 +83,9 @@ class StopWatch extends ConsumerWidget {
           error: ((error, stackTrace) {
             return Text("${error.toString()}, $stackTrace");
           }),
-          loading: () => const CircularProgressIndicator(),
+          loading: () => const Center(
+            child: CircularProgressIndicator(),
+          ),
         );
   }
 }
