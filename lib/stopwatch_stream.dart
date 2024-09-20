@@ -2,20 +2,34 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
-class Stopwatchstream extends StateNotifier<bool>  {
-  // bool timerRunning = false;
-  int counter = 0;
-  Timer? timer;
+class StopWatch {
+  final bool _timerRunning;
+  final int _counter;
+  final Timer? _timer;
+
+  StopWatch({required bool timerRunning, Timer? timer, int? counter}) : _timerRunning =  timerRunning, _timer=timer, _counter= counter ?? 0;
+
+  bool get timerRunning => _timerRunning;
+  int get counter => _counter;
+  Timer? get timer => _timer;
+
+    StopWatch copyWith({bool? timerRunning, Timer? timer, int? counter}) {
+    return StopWatch(
+      timerRunning : timerRunning ?? _timerRunning, timer: timer ?? _timer, counter: counter ?? _counter,
+    );
+  }
+}
+
+class Stopwatchstream extends StateNotifier<StopWatch>  {
 
   final StreamController<int> _controller = StreamController<int>.broadcast();
 
-   Stopwatchstream() : super(false) {
+   Stopwatchstream() : super((StopWatch(timerRunning: true))) {
     _startTimer();
   }
 
   void _startTimer() {
-    state = true;
-    timer = Timer.periodic(const Duration(seconds: 1), tick);
+    state = state.copyWith(timerRunning: true, timer: Timer.periodic(const Duration(seconds: 1), tick));
   }
 
   Stream<int> getStream() {
@@ -23,37 +37,37 @@ class Stopwatchstream extends StateNotifier<bool>  {
   }
 
   void tick(Timer timer) {
-    if (state) {
-      counter++;
-      _controller.add(counter);
+    if (state.timerRunning) {
+      state = state.copyWith(counter: state.counter + 1);
+      _controller.add(state.counter);
     }
   }
 
   void pauseTimer() {
-    state = false;
+    state = state.copyWith(timerRunning: false);
   }
 
   void resumeTimer() {
-    if (!state) {
-      state = true;
+    if (!state.timerRunning) {
+      state = state.copyWith(timerRunning: true);
     }
   }
 
   void resetTimer() {
-    counter = 0;
-    _controller.add(counter);
+    state.copyWith(counter: 0);
+    _controller.add(0);
     pauseTimer();
   }
 
   @override
   void dispose() {
-    timer?.cancel();
+    state.timer?.cancel();
     _controller.close();
     super.dispose();
   }
 }
 
-final stopwatchProvider = StateNotifierProvider<Stopwatchstream, bool>((ref) {
+final stopwatchProvider = StateNotifierProvider<Stopwatchstream, StopWatch>((ref) {
    final stopwatch = Stopwatchstream();
 
    ref.onDispose(() {

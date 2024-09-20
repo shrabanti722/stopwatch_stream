@@ -9,8 +9,8 @@ class StopWatch extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isRunning = ref.watch(stopwatchProvider);
-    final stopwatch = ref.watch(stopwatchProvider.notifier);
+    final stopWatch = ref.watch(stopwatchProvider);
+    final stopwatchNotifier = ref.watch(stopwatchProvider.notifier);
 
     return ref.watch(stopwatchStreamProvider).when(
           data: (data) {
@@ -41,20 +41,20 @@ class StopWatch extends ConsumerWidget {
                           style: ElevatedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 20.0, vertical: 8.0),
-                            backgroundColor: isRunning
+                            backgroundColor: stopWatch.timerRunning
                                 ? Colors.blue
                                 : Colors.green,
                             foregroundColor: Colors.white,
                           ),
                           onPressed: () {
-                            if (isRunning) {
-                              stopwatch.pauseTimer();
+                            if (stopWatch.timerRunning) {
+                              stopwatchNotifier.pauseTimer();
                             } else {
-                              stopwatch.resumeTimer();
+                              stopwatchNotifier.resumeTimer();
                             }
                           },
                           child: Text(
-                            isRunning ? 'PAUSE' : 'START',
+                            stopWatch.timerRunning ? 'PAUSE' : 'START',
                             style: const TextStyle(fontSize: 20.0),
                           ),
                         ),
@@ -66,7 +66,7 @@ class StopWatch extends ConsumerWidget {
                             backgroundColor: Colors.red,
                             foregroundColor: Colors.white,
                           ),
-                          onPressed: stopwatch.resetTimer,
+                          onPressed: stopwatchNotifier.resetTimer,
                           child: const Text(
                             'RESET',
                             style:
