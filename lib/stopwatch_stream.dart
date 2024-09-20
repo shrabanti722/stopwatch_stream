@@ -54,7 +54,7 @@ class Stopwatchstream extends StateNotifier<StopWatch>  {
   }
 
   void resetTimer() {
-    state.copyWith(counter: 0);
+    state = state.copyWith(counter: 0);
     _controller.add(0);
     pauseTimer();
   }
