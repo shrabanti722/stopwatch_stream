@@ -1,146 +1,87 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:stopwatch_stream/stopwatch_stream.dart';
 
-class StopwachStreamController {
-  StreamController<int> controller = StreamController<int>.broadcast();
-
-  Stream<int> get stream => controller.stream;
-  
-  void addTick(int tick) {
-    controller.add(tick);
-  }
-
-  void dispose() {
-    controller.close();
-  }
-}
-
-class StopWatch extends StatefulWidget {
+class StopWatch extends ConsumerWidget {
   const StopWatch({super.key});
 
   @override
-  State<StopWatch> createState() => StopWatchState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    return ref.watch(stopwatchStreamProvider).when(
+          data: (data) {
+            final int tick = data;
+            final hoursStr =
+                ((tick / 3600) % 60).floor().toString().padLeft(2, '0');
+            final minutesStr =
+                ((tick / 60) % 60).floor().toString().padLeft(2, '0');
+            final secondsStr = (tick % 60).floor().toString().padLeft(2, '0');
 
-class StopWatchState extends State<StopWatch> {
-  bool timerRunning = false;
-  int counter = 0;
-  Timer? timer;
-  final StopwachStreamController controller = StopwachStreamController();
-
-   void tick(_) {
-      counter++;
-      controller.addTick(counter);
-    }
-
-  void startTimer() {
-    timer = Timer.periodic(const Duration(seconds: 1), tick);
-    setState(() {
-      timerRunning = true;
-    });
-  }
-
-  void pauseTimer() {
-    setState(() {
-      timerRunning = false;
-    });
-    timer?.cancel();
-    timer = null;
-  }
-
-   void resumeTimer() {
-    timer ??= Timer.periodic(const Duration(seconds: 1), tick);
-    setState(() {
-      timerRunning = true;
-    });
-  }
-
-  void resetTimer() {
-    timer?.cancel();
-    timer = null;
-    controller.addTick(0);
-    setState(() {
-      timerRunning = false;
-      counter = 0;
-    });
-  }
-
-
-   @override
-  void dispose() {
-    timer?.cancel();
-    controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text("StopWatch")),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            StreamBuilder<int>(
-              stream: controller.stream,
-              builder: (context, snapshot) {
-                final int tick = snapshot.data ?? 0;
-                final hoursStr = ((tick / 3600) % 60).floor().toString().padLeft(2, '0');
-                final minutesStr = ((tick / 60) % 60).floor().toString().padLeft(2, '0');
-                final secondsStr = (tick % 60).floor().toString().padLeft(2, '0');
-                return Text(
-                  "$hoursStr:$minutesStr:$secondsStr",
-                  style: const TextStyle(
-                    fontSize: 90.0,
-                  ),
-                );
-              },
-            ),
-            const SizedBox(height: 30.0),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 8.0),
-                    backgroundColor: timerRunning ? Colors.blue : Colors.green,
-                    foregroundColor: Colors.white,
-                  ),
-                  onPressed: () {
-                    if (timerRunning) {
-                      pauseTimer();
-                    } else {
-                      if (controller == null) {
-                        startTimer();
-                      } else {
-                        resumeTimer();
-                      }
-                    }
-                  },
-                  child: Text(
-                    timerRunning ? 'PAUSE' : 'START',
-                    style: const TextStyle(fontSize: 20.0),
-                  ),
+            final stopwatch = ref.read(stopwatchProvider);
+            return Scaffold(
+              appBar: AppBar(title: const Text("StopWatch")),
+              body: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      "$hoursStr:$minutesStr:$secondsStr",
+                      style: const TextStyle(
+                        fontSize: 90.0,
+                      ),
+                    ),
+                    const SizedBox(height: 30.0),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 20.0, vertical: 8.0),
+                            backgroundColor: stopwatch.timerRunning
+                                ? Colors.blue
+                                : Colors.green,
+                            foregroundColor: Colors.white,
+                          ),
+                          onPressed: () {
+                            if (stopwatch.timerRunning) {
+                              stopwatch.pauseTimer();
+                            } else {
+                              stopwatch.resumeTimer();
+                            }
+                          },
+                          child: Text(
+                            stopwatch.timerRunning ? 'PAUSE' : 'START',
+                            style: const TextStyle(fontSize: 20.0),
+                          ),
+                        ),
+                        const SizedBox(width: 40.0),
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 20.0, vertical: 8.0),
+                            backgroundColor: Colors.red,
+                            foregroundColor: Colors.white,
+                          ),
+                          onPressed: stopwatch.resetTimer,
+                          child: const Text(
+                            'RESET',
+                            style:
+                                TextStyle(color: Colors.white, fontSize: 20.0),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 40.0),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 8.0),
-                    backgroundColor: Colors.red,
-                    foregroundColor: Colors.white,
-                  ),
-                  onPressed: resetTimer,
-                  child: const Text(
-                    'RESET',
-                    style: TextStyle(color: Colors.white, fontSize: 20.0),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
+              ),
+            );
+          },
+          error: ((error, stackTrace) {
+            return Text("${error.toString()}, $stackTrace");
+          }),
+          loading: () => const CircularProgressIndicator(),
+        );
   }
 }
